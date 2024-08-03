@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epilepsia em Adultos e Pediatria/Sono</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f5f70a;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .question {
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .option {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .option.correct {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+        }
+        .option.incorrect {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+        .feedback {
+            display: none;
+            flex-direction: column;
+            margin-top: 20px;
+        }
+        .feedback-item {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .feedback-item.correct::before {
+            content: "✔️ ";
+        }
+        .feedback-item.incorrect::before {
+            content: "❌ ";
+        }
+        .feedback-item + .reference {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .buttons button:hover {
+            background-color: #e0e0e0;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #settings {
+            margin-bottom: 20px;
+        }
+        #settings select,
+        #settings input {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Epilepsia em Adultos e Pediatria/Sono</h1>
+        <div id="settings">
+            <label for="num-questions">Número de questões:</label>
+            <input type="number" id="num-questions" min="1" max="36" value="10">
+            <label for="mode">Modo:</label>
+            <select id="mode">
+                <option value="new">Questões inéditas</option>
+                <option value="repeat">Repetir questões</option>
+                <option value="resume">Continuar de onde parou</option>
+            </select>
+            <button id="start-quiz">Iniciar Questionário</button>
+        </div>
+        <div class="question" id="question"></div>
+        <div id="options"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="buttons">
+            <button id="prev-button">Anterior</button>
+            <button id="show-feedback-button">Mostrar/Esconder Comentários</button>
+            <button id="next-button">Próxima</button>
+        </div>
+        <div class="buttons">
+            <button id="reset-button">Resetar Questionário</button>
+            <button id="new-quiz-button">Novo Questionário</button>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const questionBank = [
+            {
+                question: "Questão 1: Se um AED é necessário na gravidez, a escolha mais segura das seguintes seria:",
+                options: [
+                    { text: "A. Fenitoína", correct: false, feedback: "Fenitoína não é a escolha mais segura na gravidez. Fenitoína é associada a um risco elevado de malformações congênitas." },
+                    { text: "B. Primidona", correct: false, feedback: "Primidona não é recomendada como a escolha mais segura. Primidona é associada a um risco elevado de malformações congênitas." },
+                    { text: "C. Lamotrigina", correct: true, feedback: "Lamotrigina é considerada mais segura durante a gravidez. Lamotrigina é a escolha correta. A prevalência de malformações congênitas graves em filhos de mulheres com epilepsia varia de 4% a 10%. Isso corresponde a um aumento de duas a quatro vezes em relação à prevalência esperada na população geral. Os dados atualmente disponíveis sugerem que esse aumento de risco pode ser atribuído, pelo menos em parte, à exposição aos medicamentos antiepilépticos (AEDs). No entanto, deve-se notar que o risco aumentado de malformações congênitas (comparado à população geral) foi demonstrado em filhos de mulheres com epilepsia cujas mães não estavam tomando nenhum AED durante a gravidez. Embora faltem dados robustos de longo prazo, alguns dos novos AEDs, como a lamotrigina, parecem ter um risco menor de teratogênese e são considerados mais seguros do que as outras opções listadas, todas pertencentes à primeira (mais antiga) geração de AEDs. É importante notar que a depuração da lamotrigina aumenta substancialmente durante a gravidez, portanto a dose pode precisar ser ajustada durante esse período e podem ocorrer convulsões de escape. Os dados sobre malformações congênitas relacionadas à exposição aos AEDs têm sido acumulados nos últimos anos em relação aos AEDs comumente prescritos, como carbamazepina, valproato e lamotrigina. Curiosamente, as taxas de defeitos de nascença com monoterapia de carbamazepina são menores do que se pensava anteriormente e alguns grandes estudos relatam apenas aumentos marginais em comparação com diferentes controles. Dados recentes também não sugerem efeitos adversos da carbamazepina no desenvolvimento cognitivo. A prevalência de malformações congênitas associadas à lamotrigina parece ser semelhante à da carbamazepina, e estudos prospectivos limitados sobre o desenvolvimento cognitivo não indicam efeitos adversos da lamotrigina. As taxas de malformação com valproato têm sido consistentemente duas a três vezes maiores em comparação com carbamazepina ou lamotrigina. Além disso, os dados sugerem eventos adversos cognitivos significativos dependentes da dose com o uso in utero de valproato. Das opções listadas, o ácido valproico tem o maior risco. É importante lembrar que o maior risco de lábio leporino e palato, malformações do tubo neural e defeitos cardíacos congênitos ocorre durante o primeiro trimestre. O tubo neural se fecha durante o período crítico das semanas 3 e 4. A suplementação de folato pré-concepção é recomendada para diminuir o risco de defeitos do tubo neural (veja o Capítulo 14). Uma dose diária de 0,4 mg/dia de suplementação de folato é recomendada para todas as mulheres em idade fértil, e uma dose de folato de até 4-5 mg/dia é recomendada para todas as mulheres com epilepsia que tomam AEDs." },
+                    { text: "D. Ácido valpróico", correct: false, feedback: "Ácido valpróico apresenta alto risco de malformações congênitas. Ácido valpróico tem taxas de malformação duas a três vezes maiores." },
+                    { text: "E. Fenobarbital", correct: false, feedback: "Fenobarbital não é a escolha mais segura. Fenobarbital também está associado a um risco maior de malformações congênitas." }
+                ]
+            },
+            {
+                question: "Questão 2: Qual dos seguintes AEDs está associado à perda de peso?",
+                options: [
+                    { text: "A. Pregabalina", correct: false, feedback: "Pregabalina não está associada à perda de peso. Pregabalina pode causar ganho de peso." },
+                    { text: "B. Gabapentina", correct: false, feedback: "Gabapentina não está associada à perda de peso. Gabapentina pode causar ganho de peso." },
+                    { text: "C. Topiramato", correct: true, feedback: "Topiramato está associado à perda de peso. O topiramato está associado à perda de peso. Todos os outros antiepilépticos listados podem causar ganho de peso. Efeitos colaterais adicionais do topiramato sobre os quais o paciente deve ser informado incluem sonolência, dificuldades de encontrar palavras, comprometimento cognitivo, confusão, memória prejudicada, parestesias, tontura, nervosismo, glaucoma doloroso de ângulo fechado e pedras nos rins.", references: "Referência: Biton V. Mudança de peso e medicamentos antiepilépticos: questões de saúde e critérios para seleção apropriada de um agente antiepiléptico. Neurologist. 2006; 12:163-167." },
+                    { text: "D. Carbamazepina", correct: false, feedback: "Carbamazepina pode causar ganho de peso. Carbamazepina não está associada à perda de peso." },
+                    { text: "E. Ácido valpróico", correct: false, feedback: "Ácido valpróico pode causar ganho de peso. Ácido valpróico não está associado à perda de peso." }
+                ]
+            },
+            {
+                question: "Questão 3: Um homem de 36 anos com histórico anterior de infecção por HSV apresenta epilepsia de início recente que você suspeita ser devido à encefalite anterior afetando os lobos temporais. As características clínicas das crises na epilepsia do lobo temporal mesial podem ter todos os seguintes sintomas característicos, exceto:",
+                options: [
+                    { text: "A. Alucinações olfativas", correct: false, feedback: "Alucinações olfativas são características da epilepsia do lobo temporal mesial." },
+                    { text: "B. Alteração da consciência", correct: false, feedback: "Alteração da consciência é uma característica comum da epilepsia do lobo temporal mesial." },
+                    { text: "C. Crises parciais complexas", correct: false, feedback: "Crises parciais complexas são comuns na epilepsia do lobo temporal mesial." },
+                    { text: "D. Automatismos", correct: false, feedback: "Automatismos são frequentemente observados na epilepsia do lobo temporal mesial." },
+                    { text: "E. Postura tônica de um membro (postura de esgrimista)", correct: true, feedback: "A postura do esgrimista está associada à epilepsia do lobo frontal e indica ativação epiléptica da área motora suplementar. É descrita como rotação externa e abdução do braço contralateral a partir do ombro, com a cabeça virando para o mesmo lado da postura do braço.", references: "Referência: O’Brien TJ, Mosewich RK, Britton JW, et al. História e semiologia das crises na distinção entre crises do lobo frontal e crises do lobo temporal. Epilepsy Res. 2008; 82(2-3):177-182." }
+                ]
+            },
+            {
+                question: "Questão 4: Qual dos seguintes AEDs teria menos interações medicamentosas?",
+                options: [
+                    { text: "A. Gabapentina", correct: true, feedback: "Gabapentina não é nem um indutor nem um inibidor enzimático, por isso tem menos potenciais interações com outros medicamentos. Pode ser usado como terapia adjuvante para crises parciais com ou sem generalização secundária. Não é usado como monoterapia, dada a disponibilidade de outros agentes antiepilépticos mais eficazes. O gabapentino pode piorar a epilepsia generalizada, especialmente a epilepsia mioclônica. O mecanismo pelo qual o gabapentino exerce sua ação anticonvulsivante é desconhecido. No entanto, seu principal mecanismo de ação proposto é por meio de uma interação com a subunidade a2-δ dos canais de cálcio L-type regulados por voltagem pré-sinápticos. Essa subunidade foi recentemente identificada como o local específico de ligação do gabapentino, assim como a pregabalina, no cérebro de mamíferos; a ligação do gabapentino e da pregabalina pode resultar na modulação da liberação do neurotransmissor pré-sináptico. O gabapentino é absorvido por um transportador ativo no intestino. Quando o transportador se torna saturado, a absorção do gabapentino se torna não linear (ou seja, uma porcentagem menor é absorvida em doses mais altas). Notavelmente, isso está em contraste com a pregabalina, que tem uma absorção linear e, portanto, tem maior biodisponibilidade. O gabapentino é excretado pelos rins e praticamente nenhum metabolismo ocorre antes da excreção. Os efeitos colaterais mais comuns do gabapentino incluem fadiga, dor de cabeça, náusea, tontura e ataxia. Não há interações medicamentosas significativas ou reações idiossincráticas. Os outros medicamentos listados interagem com o metabolismo de vários outros medicamentos.", references: "Referência: Díaz RA, Sancho J, Serratosa J. Interações medicamentosas antiepilépticas. Neurologist. 2008; 14." },
+                    { text: "B. Carbamazepina", correct: false, feedback: "Carbamazepina interage com o metabolismo de vários outros medicamentos." },
+                    { text: "C. Ácido valpróico", correct: false, feedback: "Ácido valpróico interage com o metabolismo de vários outros medicamentos." },
+                    { text: "D. Lamotrigina", correct: false, feedback: "Lamotrigina interage com o metabolismo de vários outros medicamentos." },
+                    { text: "E. Fenitoína", correct: false, feedback: "Fenitoína interage com o metabolismo de vários outros medicamentos." }
+                ]
+            },
+            {
+                question: "Questão 5: Em uma criança pequena com epilepsia generalizada refratária a múltiplos medicamentos antiepilépticos, qual seria a próxima melhor escolha de tratamento, se tolerado?",
+                options: [
+                    { text: "A. Calosotomia do corpo caloso", correct: false, feedback: "A calosotomia do corpo caloso é uma opção, mas não é a próxima melhor escolha." },
+                    { text: "B. Dieta cetogênica", correct: true, feedback: "A dieta cetogênica tem sido relatada como eficaz em casos refratários de epilepsia na infância, mesmo quando vários ensaios antiepilépticos falharam. É normalmente iniciada no hospital por meio de jejum por 1-2 dias para induzir cetose. Isso é seguido por uma dieta estrita na qual 80% a 90% das calorias são derivadas de gordura. Procedimentos cirúrgicos como a estimulação do nervo vago e procedimentos ainda mais invasivos, como a calosotomia do corpo caloso, devem ser usados como último recurso em casos selecionados. Terapias cirúrgicas ressectivas não desempenham um papel significativo no tratamento de epilepsias generalizadas. A carbamazepina e a fenitoína podem frequentemente piorar a epilepsia generalizada e são improváveis de serem úteis.", references: "Referências: Bough KJ, Rho JM. Mecanismos anticonvulsivantes da dieta cetogênica. Epilepsia. 2007; 48:43-58. Hartman AL, Vining EP. Aspectos clínicos da dieta cetogênica. Epilepsia. 2007; 48:31-42." },
+                    { text: "C. Estimulação do nervo vago", correct: false, feedback: "A estimulação do nervo vago é uma opção, mas não é a próxima melhor escolha." },
+                    { text: "D. Fenitoína", correct: false, feedback: "Fenitoína pode frequentemente piorar a epilepsia generalizada e é improvável de ser útil." },
+                    { text: "E. Carbamazepina", correct: false, feedback: "Carbamazepina pode frequentemente piorar a epilepsia generalizada e é improvável de ser útil." }
+                ]
+            },
+            {
+                question: "Questão 6: Qual das seguintes é a melhor opção de tratamento para convulsões febris simples?",
+                options: [
+                    { text: "A. Lorazepam IV", correct: false, feedback: "Lorazepam IV não é a melhor escolha para crises febris simples." },
+                    { text: "B. Diazepam retal", correct: false, feedback: "Diazepam retal não é a melhor escolha para crises febris simples." },
+                    { text: "C. Tratamento de suporte", correct: true, feedback: "Cuidados de suporte são a recomendação geral para o manejo de uma crise febril simples (FS). Estima-se que cerca de 3% a 5% das crianças com idades entre 5 meses e 5 anos tenham FS simples. Noventa por cento desses eventos ocorrem nos primeiros 3 anos de vida. Um terço dos pacientes tem pelo menos uma crise adicional. Os fatores de risco para ter uma FS simples incluem história familiar de FS, permanência prolongada na UTI neonatal, atraso no desenvolvimento e creche. A incidência não aumenta proporcionalmente ao aumento da temperatura. Não são encontrados fatores de risco em 50% das crianças com FS. O risco de epilepsia afebril após FS é aumentado em crianças com atraso no desenvolvimento, exame neurológico anormal, FS complexa (definida abaixo) e história familiar de crises afebris. Há um risco <5% de que pacientes com FS simples desenvolvam epilepsia. Estima-se que aproximadamente 15% dos pacientes com epilepsia têm histórico de FS. FS simples são caracterizadas pelo seguinte: duração <15 minutos, crise generalizada, falta de focalidade, exame neurológico normal, sem déficits persistentes e história familiar negativa para crises. FS complexas ocorrem em aproximadamente 20% das FS e são caracterizadas pelo seguinte: duração >15 minutos, características focais, exame neurológico anormal, recorrência de crises em <24 horas, sinais pós-ictais (paralisia de Todd) e são mais propensas a serem devido a meningite, encefalite ou um distúrbio convulsivo subjacente. A profilaxia geralmente não é necessária, mas pode ser considerada para crises recorrentes ou prolongadas, crises afebris, após FS complexa e com um exame neurológico anormal e atraso no desenvolvimento. A profilaxia crônica comumente inclui fenobarbital e ácido valproico, enquanto a profilaxia de curto prazo pode incluir diazepam e antipiréticos, embora faltem dados definitivos sobre o uso de antipiréticos para a prevenção de FS. Além disso, as toxicidades potenciais associadas aos agentes antiepilépticos disponíveis superam os riscos relativamente menores associados à FS simples. Após revisar os riscos e benefícios potenciais das terapias eficazes disponíveis para profilaxia de curto e longo prazo, a Academia Americana de Pediatria concluiu (em sua diretriz de prática clínica sobre o manejo a longo prazo de crianças com FS) que nem a terapia anticonvulsivante contínua nem intermitente é recomendada para crianças com uma ou mais FS simples." },
+                    { text: "D. Fenobarbital", correct: false, feedback: "Fenobarbital não é recomendado para crises febris simples." },
+                    { text: "E. Midazolam intranasal", correct: false, feedback: "Midazolam intranasal não é a melhor escolha para crises febris simples." }
+                ]
+            },
+            {
+                question: "Questão 7: Qual das seguintes mutações não foi associada à epilepsia generalizada com convulsões febris plus (GEFS+)?",
+                options: [
+                    { text: "A. SCN1D", correct: true, feedback: "A epilepsia generalizada com crises febris mais (GEFS+) é considerada uma síndrome familiar e as mutações SCN1D não são uma causa reconhecida. Em contraste com as crises febris (FS), que ocorrem mais comumente entre 6 meses e 5 anos de idade, o fenótipo de \"crises febris mais\" inclui pacientes em que as FS continuam além do limite superior definido de idade. GEFS+ também pode estar associada a crises tônico-clônicas generalizadas (GTC) afebris. Um terço dos pacientes também apresenta outros tipos de crises. O padrão de herança é geralmente complexo, embora as descobertas genéticas iniciais tenham identificado primeiro um padrão familiar autossômico dominante. Mutações de vários genes de canais iônicos foram identificadas em famílias GEFS+. Isso inclui subunidades de canais de sódio (SCN1A, SCN1B e SCN2A) e genes de subunidades do receptor GABAA (GABRD e GABRG2). O resultado é um aumento da atividade do canal de sódio ou uma atividade prejudicada do GABA, levando, em última análise, ao aumento da hiperexcitabilidade cortical. A mutação mais frequentemente relatada é SCN1A, que codifica a subunidade α formadora de poros do canal de sódio e compreende quatro domínios transmembranares. O EEG geralmente mostra espícula-onda generalizada ou poliespículas." },
+                    { text: "B. SCN1A", correct: false, feedback: "SCN1A está associada à GEFS+." },
+                    { text: "C. SCN1B", correct: false, feedback: "SCN1B está associada à GEFS+." },
+                    { text: "D. SCN2A", correct: false, feedback: "SCN2A está associada à GEFS+." },
+                    { text: "E. GABRD", correct: false, feedback: "GABRD está associada à GEFS+." }
+                ]
+            },
+            {
+                question: "Questão 8: Uma menina de 13 anos está sendo avaliada por epilepsia parcial contínua. A síndrome de Rasmussen é suspeitada. Qual seria o achado mais comum na ressonância magnética cerebral na síndrome de Rasmussen?",
+                options: [
+                    { text: "A. Lisencefalia", correct: false, feedback: "Lisencefalia não é o achado mais comum na síndrome de Rasmussen." },
+                    { text: "B. Esquizencefalia", correct: false, feedback: "Esquizencefalia não é o achado mais comum na síndrome de Rasmussen." },
+                    { text: "C. Atrofia cortical", correct: true, feedback: "A síndrome de Rasmussen é um distúrbio cerebral inflamatório raro, mas grave, caracterizado por atrofia hemisférica unilateral progressiva, disfunção neurológica progressiva associada (hemiparesia e deterioração cognitiva) e crises focais intratáveis (epilepsia parcial contínua). A imagem revela desenvolvimento progressivo lento de atrofia cortical focal, que se correlaciona com os achados clínicos. Tem sido postulado que os anticorpos contra o receptor de glutamato-3 (GLUR3) podem desempenhar um papel patogênico, embora os dados disponíveis sejam conflitantes e a especificidade dos anticorpos GLUR3 na patogênese da encefalite de Rasmussen tenha sido desafiada nos últimos anos. A atrofia cortical focal é progressiva e eventualmente se espalha para as áreas corticais circundantes no mesmo hemisfério e, portanto, a melhor opção de tratamento para as crises intratáveis do paciente é a abordagem cirúrgica com hemisferectomia. As outras opções listadas são todas malformações corticais de desenvolvimento, com a porencefalia frequentemente resultando de um insulto isquêmico in utero." },
+                    { text: "D. Paquigiria", correct: false, feedback: "Paquigiria não é o achado mais comum na síndrome de Rasmussen." },
+                    { text: "E. Porencefalia", correct: false, feedback: "Porencefalia não é o achado mais comum na síndrome de Rasmussen." }
+                ]
+            },
+            {
+                question: "Questão 9: Um menino de 12 anos apresenta-se ao seu consultório com uma história de frequência progressivamente piorando e gravidade de crises mioclônicas diárias. Seus testes mitocondriais até agora foram negativos, embora você suspeite de uma epilepsia mioclônica progressiva (PME) de algum tipo. Qual seria o melhor medicamento antiepiléptico para tentar primeiro, dado que não há contraindicações?",
+                options: [
+                    { text: "A. Carbamazepina", correct: false, feedback: "Carbamazepina pode piorar as crises mioclônicas e não é a primeira escolha para PMEs." },
+                    { text: "B. Fenitoína", correct: false, feedback: "Fenitoína pode piorar as crises mioclônicas e não é a primeira escolha para PMEs." },
+                    { text: "C. Oxcarbazepina", correct: false, feedback: "Oxcarbazepina pode piorar as crises mioclônicas e não é a primeira escolha para PMEs." },
+                    { text: "D. Ácido valpróico", correct: true, feedback: "O ácido valproico é frequentemente o tratamento de primeira linha para epilepsia mioclônica. É aconselhada cautela no uso de ácido valproico em pacientes com mutações mitocondriais, como mutações do gene POLG, porque pode resultar em insuficiência hepática fulminante. Outros tratamentos incluem clonazepam, levetiracetam, topiramato e zonisamida. A lamotrigina é às vezes usada, mas é aconselhada cautela porque pode raramente piorar as crises mioclônicas. Gabapentino, carbamazepina, pregabalina e vigabatrina também são conhecidos por exacerbar algumas epilepsias mioclônicas." },
+                    { text: "E. Gabapentina", correct: false, feedback: "Gabapentina pode piorar as crises mioclônicas e não é a primeira escolha para PMEs." }
+                ],
+                references: "Referências: Genton P, Gelisse P. Efeito antimioclônico do levetiracetam. Epileptic Disord. 2000; 2:209-212. Malphrus AD, Wilfong AA. Uso dos novos medicamentos antiepilépticos em epilepsias pediátricas. Curr Treat Option Neurol. 2007; 9(4):256-267."
+            },
+            {
+                question: "Questão 10: Os benefícios do fosfenitoína sobre a fenitoína incluem todos os seguintes, exceto:",
+                options: [
+                    { text: "A. Pode ser administrado por via intramuscular", correct: false, feedback: "Fosfenitoína pode ser administrada por via intramuscular." },
+                    { text: "B. Menos efeitos colaterais cardiovasculares", correct: false, feedback: "Fosfenitoína tem menos efeitos colaterais cardiovasculares." },
+                    { text: "C. Atinge concentrações plasmáticas terapêuticas mais rapidamente", correct: true, feedback: "Fosfenitoína não atinge concentrações plasmáticas terapêuticas mais rapidamente do que a fenitoína." },
+                    { text: "D. Taxa mais rápida de administração IV possível", correct: false, feedback: "Fosfenitoína permite uma taxa mais rápida de administração IV." },
+                    { text: "E. Menos reações de infiltração (síndrome da luva roxa)", correct: false, feedback: "Fosfenitoína tem menos reações de infiltração em comparação com a fenitoína." }
+                ]
+            },
+            {
+                question: "Questão 11: Qual das seguintes alternativas não foi associada ao agravamento das crises mioclônicas?",
+                options: [
+                    { text: "A. Topiramato", correct: true, feedback: "Topiramato tipicamente não está associado ao agravamento das crises mioclônicas. Lamotrigina, gabapentina, carbamazepina, pregabalina e vigabatrina são conhecidas por agravar algumas epilepsias mioclônicas.", references: "Referência: Guerrini R, Belmonte A, Parmeggiani L, et al. Myoclonic status epilepticus following high-dosage lamotrigine therapy. Brain Dev. 1999; 21:420–424. Welty TE. Juvenile myoclonic epilepsy: epidemiology, pathophysiology, and management. Paediatr Drugs. 2006; 8(5):303–310." },
+                    { text: "B. Carbamazepina", correct: false, feedback: "Carbamazepina é conhecida por agravar algumas epilepsias mioclônicas." },
+                    { text: "C. Lamotrigina", correct: false, feedback: "Lamotrigina é conhecida por agravar algumas epilepsias mioclônicas." },
+                    { text: "D. Pregabalina", correct: false, feedback: "Pregabalina é conhecida por agravar algumas epilepsias mioclônicas." },
+                    { text: "E. Vigabatrina", correct: false, feedback: "Vigabatrina é conhecida por agravar algumas epilepsias mioclônicas." }
+                ]
+            },
+            {
+                question: "Questão 12: Qual dos seguintes medicamentos antiepilépticos é um inibidor enzimático hepático?",
+                options: [
+                    { text: "A. Fenitoína", correct: false, feedback: "Fenitoína é um indutor enzimático hepático." },
+                    { text: "B. Carbamazepina", correct: false, feedback: "Carbamazepina é um indutor enzimático hepático." },
+                    { text: "C. Ácido valpróico", correct: true, feedback: "O ácido valpróico é o único medicamento antiepiléptico listado que é um inibidor enzimático hepático. Todos os outros listados são indutores enzimáticos hepáticos. Essa informação é importante para prescrever com segurança um antiepiléptico concomitante ou outros medicamentos. O uso concomitante de ácido valpróico com medicamentos que passam pelo mesmo metabolismo enzimático hepático pode resultar em níveis séricos perigosamente elevados desses medicamentos porque seu metabolismo é inibido. Um exemplo seria o uso concomitante de ácido valpróico e varfarina, o que poderia resultar em níveis elevados de INR e, assim, aumentar o risco de sangramento.", references: "Referência: Wyllie E, Gupta A, Lachhwani DK (Eds). The Treatment of Epilepsy: Principles and Practice, 4th ed. Philadelphia, PA: Lippincott Williams & Wilkins; 2005." },
+                    { text: "D. Fenobarbital", correct: false, feedback: "Fenobarbital é um indutor enzimático hepático." },
+                    { text: "E. Primidona", correct: false, feedback: "Primidona é um indutor enzimático hepático." }
+                ]
+            },
+            {
+                question: "Questão 13: Qual das seguintes descobertas de EEG estaria associada à maior incidência de crises?",
+                options: [
+                    { text: "A. Pequenas espículas agudas", correct: false, feedback: "Pequenas espículas agudas são padrões benignos de EEG não associados a crises." },
+                    { text: "B. Espícula-onda de 6 Hz", correct: false, feedback: "Espícula-onda de 6 Hz são padrões benignos de EEG não associados a crises." },
+                    { text: "C. Espículas Wicket", correct: false, feedback: "Espículas Wicket são padrões benignos de EEG não associados a crises." },
+                    { text: "D. Espícula-onda de 3 Hz", correct: true, feedback: "Espícula-onda de 3 Hz é característica da epilepsia de ausência. As outras opções são padrões benignos de EEG não associados a crises (também conhecidos como variantes normais). A epilepsia de ausência tem um pico de idade em torno de 6 anos e afeta mais frequentemente meninas (70%). Esses pacientes são geralmente neurologicamente normais. A epilepsia de ausência é caracterizada por múltiplos episódios diários que duram alguns segundos. Eles começam e terminam abruptamente e interrompem qualquer atividade que esteja sendo realizada. Durante uma crise, frequentemente haverá um olhar fixo; automatismos como estalar os lábios, esfregar o nariz e mexer nas roupas também podem estar presentes, especialmente em episódios mais longos. Essas crises são classicamente provocadas por hipoglicemia e hiperventilação. Pequenos espasmos ictais das pálpebras, olhos e sobrancelhas podem ocorrer no início da crise. O tálamo é implicado na geração e sustentação da epilepsia de ausência, com os canais de cálcio de limiar baixo (tipo T) dos neurônios talâmicos desempenhando um papel central nas interações tálamo-corticais. O tratamento de primeira linha inclui etossuximida (que age via inibição do canal de cálcio tipo T). O ácido valpróico, a lamotrigina, o topiramato e a zonisamida também são usados. Notavelmente, o uso de lamotrigina tem sido associado ao agravamento das crises de ausência em raras ocasiões. Em um estudo clínico randomizado, duplo-cego, controlado, a eficácia, tolerabilidade e efeitos neuropsicológicos da etossuximida, ácido valpróico e lamotrigina foram comparados em crianças com epilepsia de ausência infantil recém-diagnosticada. A etossuximida e o ácido valpróico foram encontrados como mais eficazes do que a lamotrigina. Notavelmente, a etossuximida também foi associada a menos efeitos adversos atencionais e, portanto, é considerada a melhor escolha para monoterapia empírica inicial em crianças com epilepsia de ausência. O ácido valpróico ou a lamotrigina são frequentemente os medicamentos de escolha quando há crises tônico-clônicas generalizadas (GTC) e crises de ausência concomitantes. É importante notar que os receptores GABAB promovem a ativação dos canais de cálcio tipo T. Portanto, alguns medicamentos GABAérgicos podem exacerbar as crises de ausência. Os medicamentos antiepilépticos podem muitas vezes ser descontinuados à medida que a criança cresce, se o EEG estiver normal e não houver crises por 1 a 2 anos. A epilepsia de ausência tem um bom prognóstico. Oitenta por cento das crianças têm remissão na adolescência e pelo menos 90% eventualmente têm remissão geral.", references: "Referência: Glauser TA, Cnaan A, Shinnar S, et al. Ethosuximide, valproic acid, and lamotrigine in childhood absence epilepsy. N Engl J Med. 2010; 362(9):790–799. Wyllie E, Gupta A, Lachhwani DK (Eds). The Treatment of Epilepsy: Principles and Practice, 4th ed. Philadelphia, PA: Lippincott Williams & Wilkins; 2005." },
+                    { text: "E. Espículas positivas de 14 e 6 Hz", correct: false, feedback: "Espículas positivas de 14 e 6 Hz são padrões benignos de EEG não associados a crises." }
+                ]
+            },
+            {
+                question: "Questão 14: Em que idade os seres humanos atingem a frequência α predominante (fundo posterior) vista em adultos?",
+                options: [
+                    { text: "A. 6 a 8 anos", correct: false, feedback: "A frequência α predominante em adultos geralmente não é alcançada entre 6 a 8 anos." },
+                    { text: "B. 8 a 10 anos", correct: true, feedback: "O padrão adulto do ritmo α dominante posterior normal em crianças mais velhas e adultos é geralmente visto na idade de 8 a 10 anos. A seguir, uma revisão das frequências de EEG adulto: β >13 Hz, α 8 a 13 Hz, θ 4 a 7 Hz, δ <4 Hz.", references: "Referência: Bradley WG, Daroff RB, Fenichel GM, et al. Neurology in Clinical Practice, 5th ed. Philadelphia, PA: Elsevier; 2008. Levin K, Luders H. Comprehensive Clinical Neurophysiology, Philadelphia, PA: WB Saunders Company; 2000." },
+                    { text: "C. 10 a 12 anos", correct: false, feedback: "A frequência α predominante em adultos geralmente não é alcançada entre 10 a 12 anos." },
+                    { text: "D. 12 a 14 anos", correct: false, feedback: "A frequência α predominante em adultos geralmente não é alcançada entre 12 a 14 anos." },
+                    { text: "E. 14 a 16 anos", correct: false, feedback: "A frequência α predominante em adultos geralmente não é alcançada entre 14 a 16 anos." }
+                ]
+            },
+            {
+                question: "Questão 15: Uma mulher de 47 anos apresenta-se com confusão, febre e crises. Estudos de LCR são positivos para infecção por HSV. Qual seria a descoberta mais provável em um EEG dessa paciente?",
+                options: [
+                    { text: "A. Ondas trifásicas", correct: false, feedback: "Ondas trifásicas são vistas em coma hepático, anóxia, toxicidade medicamentosa e outras encefalopatias tóxicas e metabólicas. Ondas trifásicas são generalizadas e máximas bifrontais, e consistem em uma onda positiva proeminente precedida e seguida por ondas negativas menores em intervalos de 0,5 a 2 Hz." },
+                    { text: "B. Espículas Wicket", correct: false, feedback: "Espículas Wicket pertencem às variantes normais benignas." },
+                    { text: "C. Descargas epileptiformes lateralizadas periódicas (PLEDs)", correct: true, feedback: "Descargas epileptiformes lateralizadas periódicas (PLEDs) seriam esperadas e também são discutidas na pergunta 78. PLEDs consistem em complexos unilaterais ou bilaterais, independentes, de alta amplitude, ondas agudas e lentas de 0,5 a 3 Hz. Qualquer processo destrutivo como anóxia, encefalite por HSV, AVC e tumor pode causar PLEDs.", references: "Referência: Levin K, Luders H. Comprehensive Clinical Neurophysiology. Philadelphia, PA: WB Saunders Company; 2000." },
+                    { text: "D. Poliespículas", correct: false, feedback: "Poliespículas são verdadeiras descargas epileptiformes." },
+                    { text: "E. Complexos de espícula-onda rápida", correct: false, feedback: "Complexos de espícula-onda rápida são verdadeiras descargas epileptiformes." }
+                ]
+            },
+            {
+                question: "Questão 16: Em um paciente com epilepsia de ausência, o estado de mal epiléptico pode ser precipitado por todos os seguintes medicamentos antiepilépticos, exceto:",
+                options: [
+                    { text: "A. Fenitoína", correct: false, feedback: "Fenitoína tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+                    { text: "B. Topiramato", correct: true, feedback: "Fenitoína, carbamazepina, gabapentina e lamotrigina têm sido associadas ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência. O topiramato não tem essa associação.", references: "Referência: Kaplan PW, Drislane FW (Eds). Nonconvulsive Status Epilepticus. New York: Demos Medical Publishing; 2009. Manning JP, Richards DA, Bowery NG. Pharmacology of absence epilepsy. Trends Pharmacol Sci. 2003; 24(10):542–549. Shorvon S, Walker M. Status epilepticus in idiopathic generalized epilepsy. Epilepsia. 2005; 46(Suppl 9):73–79." },
+                    { text: "C. Carbamazepina", correct: false, feedback: "Carbamazepina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+                    { text: "D. Lamotrigina", correct: false, feedback: "Lamotrigina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+                    { text: "E. Gabapentina", correct: false, feedback: "Gabapentina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." }
+                ]
+            },
+            {
+                question: "Questão 17: Qual dos seguintes medicamentos antiepilépticos é o mais provável de ter um efeito na concentração de hormônios esteróides no sangue em pacientes que tomam pílulas anticoncepcionais e, portanto, levar ao fracasso contraceptivo?",
+                options: [
+                    { text: "A. Levetiracetam", correct: false, feedback: "Levetiracetam tem interação mínima com anticoncepcionais orais." },
+                    { text: "B. Gabapentina", correct: false, feedback: "Gabapentina tem interação mínima com anticoncepcionais orais." },
+                    { text: "C. Topiramato (dose <200 mg/dia)", correct: false, feedback: "Topiramato (em doses <200 mg/dia) tem interação mínima com anticoncepcionais orais." },
+                    { text: "D. Oxcarbazepina", correct: true, feedback: "Muitos antiepilépticos indutores enzimáticos (fenitoína, carbamazepina, fenobarbital, oxcarbazepina e topiramato em doses >200 mg/dia) aumentam o metabolismo dos anticoncepcionais orais. Medicamentos antiepilépticos com interação mínima com anticoncepcionais orais incluem ácido valpróico, gabapentina, pregabalina, levetiracetam, zonisamida, tiagabina e topiramato (em doses <200 mg/dia).", references: "Referência: Crawford P. Best practice guidelines for the management of women with epilepsy. Epilepsia 2005; 46(Suppl 9):117–124." },
+                    { text: "E. Zonisamida", correct: false, feedback: "Zonisamida tem interação mínima com anticoncepcionais orais." }
+                ]
+            },
+            {
+                question: "Questão 18: Qual das seguintes afirmações está correta sobre a farmacocinética da fenitoína?",
+                options: [
+                    { text: "A. É predominantemente metabolizada pelos rins", correct: false, feedback: "Fenitoína é usada para o tratamento de crises parciais e/ou tônico-clônicas generalizadas (primárias ou secundárias). Seu principal mecanismo de ação é a inibição dos canais de sódio neuronais dependentes de voltagem. Ela passa predominantemente por metabolismo hepático, embora também haja um metabolismo renal mínimo. Pacientes que estão em estados de doença de baixa proteína (como insuficiência hepática, etc.) precisam ser acompanhados com níveis de fenitoína livre devido à menor disponibilidade de proteína para ligação, tornando os níveis totais não confiáveis. É importante entender que a fenitoína exibe cinética não linear (de ordem zero), à medida que as vias metabólicas responsáveis por seu metabolismo se saturam. Isso significa que quando a dose de fenitoína é aumentada além de um certo ponto, sua concentração plasmática no estado de equilíbrio não aumentará de maneira proporcional, pequenas alterações de dose podem resultar em um grande incremento tóxico nas concentrações plasmáticas. Em geral, a fenitoína se aproxima da cinética de ordem zero em níveis totais >10 a 15 μg/mL e pequenos incrementos de dose podem causar grandes aumentos nos níveis séricos." },
+                    { text: "B. É exclusivamente metabolizada pelo fígado", correct: false, feedback: "Fenitoína é predominantemente metabolizada pelo fígado, mas também há um metabolismo renal mínimo." },
+                    { text: "C. Possui cinética de ordem zero (não linear)", correct: true, feedback: "Fenitoína é usada para o tratamento de crises parciais e/ou tônico-clônicas generalizadas (primárias ou secundárias). Seu principal mecanismo de ação é a inibição dos canais de sódio neuronais dependentes de voltagem. Ela passa predominantemente por metabolismo hepático, embora também haja um metabolismo renal mínimo. Pacientes que estão em estados de doença de baixa proteína (como insuficiência hepática, etc.) precisam ser acompanhados com níveis de fenitoína livre devido à menor disponibilidade de proteína para ligação, tornando os níveis totais não confiáveis. É importante entender que a fenitoína exibe cinética não linear (de ordem zero), à medida que as vias metabólicas responsáveis por seu metabolismo se saturam. Isso significa que quando a dose de fenitoína é aumentada além de um certo ponto, sua concentração plasmática no estado de equilíbrio não aumentará de maneira proporcional, pequenas alterações de dose podem resultar em um grande incremento tóxico nas concentrações plasmáticas. Em geral, a fenitoína se aproxima da cinética de ordem zero em níveis totais >10 a 15 μg/mL e pequenos incrementos de dose podem causar grandes aumentos nos níveis séricos.", references: "Referência: Ahn JE, Cloyd JC, Brundage RC, et al. Phenytoin half-life and clearance during maintenance therapy in adults and elderly patients with epilepsy. Neurology. 2008; 71(1):38–43. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009. Schachter SC. Review of the mechanisms of action of antiepileptic drugs. CNS Drugs. 1995; 4:469–477." },
+                    { text: "D. É um inibidor enzimático hepático", correct: false, feedback: "Fenitoína é um indutor enzimático hepático, por isso pode aumentar o metabolismo de muitos outros medicamentos." },
+                    { text: "E. Possui cinética de primeira ordem (linear)", correct: false, feedback: "Fenitoína exibe cinética não linear (de ordem zero), à medida que as vias metabólicas responsáveis por seu metabolismo se saturam." }
+                ]
+            },
+            {
+                question: "Questão 19: Qual das seguintes não é uma consequência comum a longo prazo do uso crônico de fenitoína?",
+                options: [
+                    { text: "A. Hirsutismo", correct: false, feedback: "Fenitoína pode causar hirsutismo como uma consequência a longo prazo." },
+                    { text: "B. Osteoporose", correct: false, feedback: "Fenitoína pode causar osteoporose como uma consequência a longo prazo." },
+                    { text: "C. Hiperplasia gengival", correct: false, feedback: "Fenitoína pode causar hiperplasia gengival como uma consequência a longo prazo." },
+                    { text: "D. Atrofia cortical", correct: true, feedback: "Fenitoína é usada para o tratamento de crises parciais e/ou tônico-clônicas generalizadas (primárias ou secundárias). Seu principal mecanismo de ação é a inibição dos canais de sódio neuronais dependentes de voltagem. Ela passa predominantemente por metabolismo hepático, embora também haja um metabolismo renal mínimo. Pacientes que estão em estados de doença de baixa proteína (como insuficiência hepática, etc.) precisam ser acompanhados com níveis de fenitoína livre devido à menor disponibilidade de proteína para ligação, tornando os níveis totais não confiáveis. É importante entender que a fenitoína exibe cinética não linear (de ordem zero), à medida que as vias metabólicas responsáveis por seu metabolismo se saturam. Isso significa que quando a dose de fenitoína é aumentada além de um certo ponto, sua concentração plasmática no estado de equilíbrio não aumentará de maneira proporcional, pequenas alterações de dose podem resultar em um grande incremento tóxico nas concentrações plasmáticas. Em geral, a fenitoína se aproxima da cinética de ordem zero em níveis totais >10 a 15 μg/mL e pequenos incrementos de dose podem causar grandes aumentos nos níveis séricos. Reações idiossincráticas causadas pela fenitoína incluem anemia aplástica, síndrome de Stevens-Johnson e insuficiência hepática. Outros efeitos colaterais incluem trombocitopenia, linfadenopatia, hiperplasia gengival, acne, características faciais grosseiras (também chamadas de \"fácies de fenitoína\", por hipertrofia do tecido subcutâneo facial), hirsutismo, síndrome da luva roxa (com administração intravenosa), nistagmo, ataxia, disartria, diplopia, náusea, tontura e sonolência. A fenitoína também pode causar deficiência de folato e aumento do metabolismo da vitamina D, resultando em osteoporose prematura. Crônicamente, seu uso tem sido associado a uma neuropatia periférica geralmente leve e com atrofia cerebelar, mas não cortical. Agudamente, a forma IV pode causar flebite, dor, queimação, hipotensão e anormalidades de condução cardíaca. A fenitoína é um indutor enzimático hepático, por isso pode aumentar o metabolismo de muitos outros medicamentos.", references: "Referência: Ahn JE, Cloyd JC, Brundage RC, et al. Phenytoin half-life and clearance during maintenance therapy in adults and elderly patients with epilepsy. Neurology. 2008; 71(1):38–43. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009. Schachter SC. Review of the mechanisms of action of antiepileptic drugs. CNS Drugs. 1995; 4:469–477." },
+                    { text: "E. Acne", correct: false, feedback: "Fenitoína pode causar acne como uma consequência a longo prazo." }
+                ]
+            },
+            {
+                question: "Questão 20: Um paciente com epilepsia conhecida em uso de fenitoína apresentou-se ao departamento de emergência com uma crise convulsiva. Seu nível total de fenitoína é de 10 μg/mL, mas quando você olha seus níveis anteriores, normalmente está em torno de 15 μg/mL. Supondo um volume de distribuição de 0,8 L/kg, qual das seguintes seria a melhor dose IV para elevá-lo ao seu nível basal se ele pesa 75 kg (assumindo que o paciente não tenha comorbidades conhecidas que modifiquem a cinética da fenitoína, como uremia ou hipoalbuminemia)?",
+                options: [
+                    { text: "A. 100 mg", correct: false, feedback: "100 mg não seria suficiente para elevar o nível total de fenitoína ao nível basal." },
+                    { text: "B. 200 mg", correct: false, feedback: "200 mg não seria suficiente para elevar o nível total de fenitoína ao nível basal." },
+                    { text: "C. 300 mg", correct: true, feedback: "Fenitoína é usada para o tratamento de crises parciais e/ou tônico-clônicas generalizadas (primárias ou secundárias). Seu principal mecanismo de ação é a inibição dos canais de sódio neuronais dependentes de voltagem. Ela passa predominantemente por metabolismo hepático, embora também haja um metabolismo renal mínimo. Pacientes que estão em estados de doença de baixa proteína (como insuficiência hepática, etc.) precisam ser acompanhados com níveis de fenitoína livre devido à menor disponibilidade de proteína para ligação, tornando os níveis totais não confiáveis. É importante entender que a fenitoína exibe cinética não linear (de ordem zero), à medida que as vias metabólicas responsáveis por seu metabolismo se saturam. Isso significa que quando a dose de fenitoína é aumentada além de um certo ponto, sua concentração plasmática no estado de equilíbrio não aumentará de maneira proporcional, pequenas alterações de dose podem resultar em um grande incremento tóxico nas concentrações plasmáticas. Em geral, a fenitoína se aproxima da cinética de ordem zero em níveis totais >10 a 15 μg/mL e pequenos incrementos de dose podem causar grandes aumentos nos níveis séricos. Reações idiossincráticas causadas pela fenitoína incluem anemia aplástica, síndrome de Stevens-Johnson e insuficiência hepática. Outros efeitos colaterais incluem trombocitopenia, linfadenopatia, hiperplasia gengival, acne, características faciais grosseiras (também chamadas de \"fácies de fenitoína\", por hipertrofia do tecido subcutâneo facial), hirsutismo, síndrome da luva roxa (com administração intravenosa), nistagmo, ataxia, disartria, diplopia, náusea, tontura e sonolência. A fenitoína também pode causar deficiência de folato e aumento do metabolismo da vitamina D, resultando em osteoporose prematura. Crônicamente, seu uso tem sido associado a uma neuropatia periférica geralmente leve e com atrofia cerebelar, mas não cortical. Agudamente, a forma IV pode causar flebite, dor, queimação, hipotensão e anormalidades de condução cardíaca. A fenitoína é um indutor enzimático hepático, por isso pode aumentar o metabolismo de muitos outros medicamentos. Existem variações no cálculo da carga e doses corretivas de fenitoína. Uma fórmula geral simples para calcular um bolus IV suplementar (ou carga) de fenitoína é a seguinte: (nível total de fenitoína alvo – nível total de fenitoína atual) × (peso corporal em quilogramas × volume de distribuição). A faixa terapêutica para fenitoína é de 10 a 20 μg/mL. A faixa para volume de distribuição para fenitoína é de 0,5 a 1 L/kg, com uma média de 0,8 L/kg frequentemente usada. Se inserirmos os números do caso na fórmula, o cálculo será o seguinte: (15 – 10) × (75 × 0,8) = 300 mg. Uma reavaliação precisa dos novos níveis pode ser obtida verificando níveis livres e totais aproximadamente 2 horas após a carga IV.", references: "Referência: Ahn JE, Cloyd JC, Brundage RC, et al. Phenytoin half-life and clearance during maintenance therapy in adults and elderly patients with epilepsy. Neurology. 2008; 71(1):38–43. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009. Schachter SC. Review of the mechanisms of action of antiepileptic drugs. CNS Drugs. 1995; 4:469–477." },
+                    { text: "D. 400 mg", correct: false, feedback: "400 mg seria muito para elevar o nível total de fenitoína ao nível basal." },
+                    { text: "E. 500 mg", correct: false, feedback: "500 mg seria muito para elevar o nível total de fenitoína ao nível basal." }
+                ]
+            },
+            {
+                question: "Questão 21: Um homem de 43 anos em uso de ácido valpróico para epilepsia de longa data apresenta-se ao departamento de emergência com uma crise convulsiva. Ele pesa 70 kg e seu nível total de ácido valpróico é de 70 μg/mL, embora ele normalmente tenha níveis em torno de 100 μg/mL. Supondo um volume de distribuição de 0,2 L/kg, qual será seu bolus IV corretivo?",
+                options: [
+                    { text: "A. 120 mg", correct: false, feedback: "120 mg não seria suficiente para elevar o nível total de ácido valpróico ao nível basal." },
+                    { text: "B. 220 mg", correct: false, feedback: "220 mg não seria suficiente para elevar o nível total de ácido valpróico ao nível basal." },
+                    { text: "C. 320 mg", correct: false, feedback: "320 mg não seria suficiente para elevar o nível total de ácido valpróico ao nível basal." },
+                    { text: "D. 420 mg", correct: true, feedback: "A dose de correção IV para o ácido valpróico é a seguinte: (nível total alvo de ácido valpróico – nível total atual de ácido valpróico) × (peso corporal em quilogramas × volume de distribuição). A faixa terapêutica para o ácido valpróico é de 50 a 100 μg/mL. A faixa para o volume de distribuição do ácido valpróico é de 0,1 a 0,3 L/kg, com uma média de 0,2 L/kg frequentemente usada. Se aplicarmos esta fórmula ao caso, o resultado é: (100 – 70) × (70 × 0,2) = 420 mg. O ácido valpróico tem atividade antiepiléptica de amplo espectro e é comumente usado em crises parciais, tônico-clônicas generalizadas (GTC), de ausência, mioclônicas e tônicas, bem como em espasmos infantis. Seu mecanismo de ação é através do antagonismo dos canais de sódio e cálcio tipo T, e também atua como agonista no receptor GABAA. Ele passa principalmente pelo metabolismo hepático e é um inibidor enzimático hepático. Efeitos colaterais incluem queixas cognitivas e gastrointestinais. Raramente, pode causar aumento das enzimas hepáticas e, raramente, hepatite fatal idiossincrática (mais comum em menores de 2 anos). Crônicamente, pode causar ganho de peso, afinamento do cabelo, síndrome dos ovários policísticos, acne, irregularidades menstruais, tremor, pancreatite e trombocitopenia. A atrofia cerebelar ocorre com o uso prolongado de fenitoína, mas não com o ácido valpróico. O ácido valpróico aumenta significativamente a meia-vida da lamotrigina em 24 a 48 horas. A introdução de apenas 500 mg de ácido valpróico em usuários crônicos de lamotrigina pode necessitar uma redução imediata de 50% na dose de lamotrigina.", references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009." },
+                    { text: "E. 520 mg", correct: false, feedback: "520 mg seria muito para elevar o nível total de ácido valpróico ao nível basal." }
+                ]
+            },
+            {
+                question: "Questão 22: Qual das seguintes não é uma possível consequência a longo prazo do ácido valpróico?",
+                options: [
+                    { text: "A. Perda de cabelo", correct: false, feedback: "O ácido valpróico pode causar perda de cabelo como uma consequência a longo prazo." },
+                    { text: "B. Atrofia cerebelar", correct: true, feedback: "A atrofia cerebelar ocorre com o uso prolongado de fenitoína, mas não com o ácido valpróico." },
+                    { text: "C. Síndrome dos ovários policísticos", correct: false, feedback: "O ácido valpróico pode causar síndrome dos ovários policísticos como uma consequência a longo prazo." },
+                    { text: "D. Tremor", correct: false, feedback: "O ácido valpróico pode causar tremor como uma consequência a longo prazo." },
+                    { text: "E. Ganho de peso", correct: false, feedback: "O ácido valpróico pode causar ganho de peso como uma consequência a longo prazo." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 23: O neurologista é chamado para ver este paciente como consulta no departamento de emergência. O médico do departamento de emergência pergunta se lamotrigina poderia ser adicionada como um agente antiepiléptico adicional ao ácido valpróico. Qual das seguintes melhor descreve a interação entre esses dois medicamentos?",
+                options: [
+                    { text: "A. Lamotrigina aumenta significativamente a meia-vida do ácido valpróico", correct: false, feedback: "Lamotrigina não aumenta a meia-vida do ácido valpróico." },
+                    { text: "B. Ácido valpróico diminui significativamente a meia-vida da lamotrigina", correct: false, feedback: "Ácido valpróico não diminui a meia-vida da lamotrigina." },
+                    { text: "C. Ácido valpróico aumenta significativamente a meia-vida da lamotrigina", correct: true, feedback: "O ácido valpróico aumenta significativamente a meia-vida da lamotrigina em 24 a 48 horas. A introdução de apenas 500 mg de ácido valpróico em usuários crônicos de lamotrigina pode necessitar de uma redução imediata de 50% na dose de lamotrigina." },
+                    { text: "D. Lamotrigina diminui significativamente a meia-vida do ácido valpróico", correct: false, feedback: "Lamotrigina não diminui a meia-vida do ácido valpróico." },
+                    { text: "E. Lamotrigina e ácido valpróico não têm nenhuma interação significativa", correct: false, feedback: "Lamotrigina e ácido valpróico têm interações significativas." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 24: Qual das seguintes não é um efeito colateral conhecido da carbamazepina?",
+                options: [
+                    { text: "A. Tontura", correct: false, feedback: "Carbamazepina pode causar tontura como efeito colateral." },
+                    { text: "B. Nistagmo", correct: false, feedback: "Carbamazepina pode causar nistagmo como efeito colateral." },
+                    { text: "C. Sonolência", correct: false, feedback: "Carbamazepina pode causar sonolência como efeito colateral." },
+                    { text: "D. Hipernatremia", correct: true, feedback: "Carbamazepina é mais comumente associada a hiponatremia, não hipernatremia." },
+                    { text: "E. Náusea", correct: false, feedback: "Carbamazepina pode causar náusea como efeito colateral." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 25: Qual das seguintes afirmações é verdadeira sobre a carbamazepina?",
+                options: [
+                    { text: "A. Ela inibe seu próprio metabolismo", correct: false, feedback: "Carbamazepina não inibe seu próprio metabolismo." },
+                    { text: "B. Para novas crises frequentes, a carbamazepina é uma boa opção como terapia antiepiléptica inicial", correct: false, feedback: "Carbamazepina não é uma boa opção como terapia inicial para crises frequentes devido ao seu efeito de autoindução." },
+                    { text: "C. Ela não tem efeito sobre seu próprio metabolismo", correct: false, feedback: "Carbamazepina tem efeito de autoindução em seu próprio metabolismo." },
+                    { text: "D. Ela induz seu próprio metabolismo", correct: true, feedback: "Carbamazepina sofre metabolismo hepático com excreção renal de seus metabólitos, então é necessário ter cautela em caso de insuficiência renal ou hepática. A carbamazepina também é um indutor enzimático hepático e sofre autoindução. A dose deve ser aumentada gradualmente para permitir o desenvolvimento de tolerância aos seus efeitos colaterais no SNC, mas também para evitar toxicidade precoce, pois a carbamazepina “autoinduz” as enzimas hepáticas responsáveis por seu próprio metabolismo. Se a carbamazepina for iniciada em dose muito alta ou titulada muito rapidamente, o resultado será níveis elevados de carbamazepina com toxicidade acompanhada no início, pois as enzimas hepáticas responsáveis pelo metabolismo da carbamazepina ainda não foram totalmente ativadas (autoinduzidas). Portanto, é importante lembrar que a meia-vida da carbamazepina diminui de 30 horas para 10 a 20 horas após os primeiros dias a semanas de uso. A autoindução é concluída após 3 a 5 semanas de um regime de dosagem fixo. As concentrações plasmáticas diminuem nos primeiros 1 a 2 meses e, durante esse tempo, a dose de carbamazepina deve ser aumentada gradualmente. Portanto, a carbamazepina não seria uma boa opção se desejado um controle rápido de crises de início recente e frequentes. Vale ressaltar que a oxcarbazepina não sofre autoindução e pode ser titulada mais rapidamente." },
+                    { text: "E. Ela não tem metabolismo hepático", correct: false, feedback: "Carbamazepina tem metabolismo hepático." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 26: Um homem de 34 anos sendo tratado com carbamazepina apresenta-se com tontura e nistagmo após o ácido valpróico ter sido recentemente adicionado para sua epilepsia. Esses sintomas provavelmente estão relacionados a:",
+                options: [
+                    { text: "A. Níveis elevados de carbamazepina", correct: false, feedback: "Os níveis de carbamazepina podem estar normais, mas os sintomas estão relacionados aos níveis elevados de 10,11-epóxido de carbamazepina." },
+                    { text: "B. Níveis elevados de ácido valpróico", correct: false, feedback: "Os sintomas não estão relacionados aos níveis elevados de ácido valpróico." },
+                    { text: "C. Níveis elevados de 10,11-epóxido de carbamazepina", correct: true, feedback: "O ácido valpróico inibe o metabolismo do 10,11-epóxido de carbamazepina, o principal metabólito ativo da carbamazepina. Assim, embora os níveis de carbamazepina possam estar normais, o paciente pode apresentar toxicidade devido aos níveis elevados de 10,11-epóxido de carbamazepina." },
+                    { text: "D. Sintomas de abstinência devido ao aumento do metabolismo da carbamazepina", correct: false, feedback: "Os sintomas não estão relacionados à abstinência ou ao aumento do metabolismo da carbamazepina." },
+                    { text: "E. O próprio ácido valpróico, enquanto seu corpo se ajusta a um segundo antiepiléptico", correct: false, feedback: "Os sintomas não estão relacionados ao ajuste do corpo ao ácido valpróico." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 27: Oxcarbazepina é um derivado estrutural da carbamazepina. Qual das seguintes afirmações é verdadeira sobre a oxcarbazepina em comparação com a carbamazepina?",
+                options: [
+                    { text: "A. Não é um indutor enzimático hepático", correct: false, feedback: "Oxcarbazepina é um indutor enzimático hepático, mas com menos efeito de indução em comparação com a carbamazepina." },
+                    { text: "B. Sem risco de hiponatremia", correct: false, feedback: "Oxcarbazepina também pode causar hiponatremia." },
+                    { text: "C. Não é metabolizada em um epóxido", correct: true, feedback: "A oxcarbazepina é um derivado estrutural da carbamazepina, sendo reduzida a 10-monohidroxi-carbamazepina e, ao contrário da carbamazepina, não sofre oxidação para epóxido. A carbamazepina, por outro lado, é oxidada para 10,11-carbamazepina epóxido, que é o principal metabólito da carbamazepina. É importante lembrar que o 10,11-carbamazepina epóxido é farmacologicamente ativo e responsável por muitos dos efeitos colaterais observados com o uso da carbamazepina. Devido a essas diferenças, a oxcarbazepina tem menos efeitos colaterais em geral, comparada à carbamazepina. A oxcarbazepina tem menos indução enzimática hepática, não sofre autoindução (e, portanto, pode ser titulada mais rapidamente), e é usada para os mesmos tipos de crises que a carbamazepina, tendo o mesmo mecanismo de ação, vias metabólicas e perfil de efeitos colaterais. Aproximadamente 30% dos pacientes que têm história de rash com carbamazepina também desenvolverão rash quando expostos à oxcarbazepina.", references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009." },
+                    { text: "D. Indicada em ambas epilepsias parciais e generalizadas", correct: false, feedback: "Oxcarbazepina é indicada principalmente para crises parciais." },
+                    { text: "E. Sem risco de rash como visto com a carbamazepina", correct: false, feedback: "Oxcarbazepina também pode causar rash, especialmente em pacientes com histórico de rash com carbamazepina." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 28: Qual das seguintes é uma ação dos benzodiazepínicos?",
+                options: [
+                    { text: "A. Antagonismo do canal de cloro", correct: false, feedback: "Benzodiazepínicos não antagonizam o canal de cloro." },
+                    { text: "B. Agonismo do canal de cloro", correct: false, feedback: "Benzodiazepínicos não agonizam o canal de cloro diretamente." },
+                    { text: "C. Antagonismo do GABAA", correct: false, feedback: "Benzodiazepínicos não antagonizam o GABAA." },
+                    { text: "D. Agonismo do GABAA", correct: true, feedback: "Os benzodiazepínicos são medicamentos antiepilépticos de amplo espectro, usados mais comumente para crises parciais, tônico-clônicas generalizadas (GTC), de ausência e mioclônicas, bem como status epilepticus. Eles atuam como agonistas do GABAA. A ligação ao receptor GABAA leva à ativação subsequente dos canais de cloro e, como resultado, à hiperpolarização da membrana neuronal e à diminuição da excitabilidade neuronal. Os benzodiazepínicos, em geral, passam pelo metabolismo hepático e excreção renal de seus metabólitos.", references: "Referência: Brunton LL, Lazo JS, Parker KL, eds. Goodman and Gilmans’ Pharmacological Basis of Therapeutics, 11th ed. New York: McGraw-Hill; 2005." },
+                    { text: "E. Agonismo do GABAB", correct: false, feedback: "Benzodiazepínicos não agonizam o GABAB." }
+                ],
+                references: "Referência: Brunton LL, Lazo JS, Parker KL, eds. Goodman and Gilmans’ Pharmacological Basis of Therapeutics, 11th ed. New York: McGraw-Hill; 2005."
+            },
+            {
+                question: "Questão 29: Qual das seguintes é a menos provável efeito colateral da lamotrigina?",
+                options: [
+                    { text: "A. Síndrome de Stevens-Johnson", correct: false, feedback: "Síndrome de Stevens-Johnson é um efeito colateral grave e raro da lamotrigina." },
+                    { text: "B. Visão embaçada", correct: false, feedback: "Visão embaçada é um efeito colateral possível da lamotrigina." },
+                    { text: "C. Ataxia", correct: false, feedback: "Ataxia é um efeito colateral possível da lamotrigina." },
+                    { text: "D. Tontura", correct: false, feedback: "Tontura é um efeito colateral possível da lamotrigina." },
+                    { text: "E. Queixas cognitivas", correct: true, feedback: "Distúrbios cognitivos geralmente não são observados com a lamotrigina. A lamotrigina é geralmente bem tolerada, desde que seja introduzida gradualmente com uma titulação lenta, embora tontura, visão embaçada, diplopia e ataxia possam ser observadas. A síndrome de Stevens-Johnson ou necrólise epidérmica tóxica está associada ao uso concomitante de ácido valpróico ou titulação rápida da lamotrigina, e esse risco parece ser maior em menores de 16 anos. Distúrbios cognitivos geralmente não são observados com a lamotrigina. A lamotrigina é um medicamento antiepiléptico de amplo espectro e é usado para crises parciais e tônico-clônicas generalizadas (GTC), bem como para crises generalizadas da síndrome de Lennox-Gastaut. Também tem sido usada para crises de ausência e mioclônicas, embora não seja a primeira linha de terapia para esses tipos de crises. Atua como antagonista dos canais de sódio e também inibe a liberação de glutamato. Passa pelo metabolismo hepático com excreção renal de seus metabólitos.", references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "Questão 30: Qual das seguintes afirmações está incorreta sobre a lamotrigina e as interações hormonais?",
+                options: [
+                    { text: "A. Anticoncepcionais orais contendo apenas etinilestradiol aumentam a depuração da lamotrigina", correct: false, feedback: "Anticoncepcionais orais contendo apenas etinilestradiol aumentam a depuração da lamotrigina." },
+                    { text: "B. Anticoncepcionais orais contendo tanto etinilestradiol quanto progesterona aumentam a depuração da lamotrigina", correct: false, feedback: "Anticoncepcionais orais contendo tanto etinilestradiol quanto progesterona aumentam a depuração da lamotrigina." },
+                    { text: "C. Anticoncepcionais orais contendo apenas progesterona aumentam a depuração da lamotrigina", correct: true, feedback: "Anticoncepcionais orais contendo apenas progesterona não aumentam a depuração da lamotrigina." },
+                    { text: "D. A depuração da lamotrigina é significativamente aumentada durante a gravidez", correct: false, feedback: "A depuração da lamotrigina é significativamente aumentada durante a gravidez." },
+                    { text: "E. A terapia de reposição hormonal aumenta a depuração da lamotrigina", correct: false, feedback: "A terapia de reposição hormonal aumenta a depuração da lamotrigina." }
+                ],
+                references: "Referência: Löscher W. Basic pharmacology of valproate: a review after 35 years of clinical use for the treatment of epilepsy. CNS Drugs. 2002; 16:669–694. Ropper AH, Samuels MA. Adams and Victor’s Principles of Neurology, 9th ed. New York: McGraw-Hill; 2009."
+            },
+            {
+                question: "46. Uma menina de 2 meses apresenta cegueira, espasmos infantis e um exame retiniano anormal. A ressonância magnética do cérebro mostra agenesia do corpo caloso. Qual das seguintes é a causa mais provável?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "C. Epilepsia mioclônica grave da infância (síndrome de Dravet)", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "D. Síndrome de Aicardi", correct: true, feedback: "Esta paciente tem síndrome de Aicardi, que é um distúrbio genético raro, geralmente associado a um padrão de herança dominante ligado ao X. A síndrome de Aicardi é caracterizada pela presença de espasmos infantis, lacunas coriorretinianas e agenesia do corpo caloso. Sendo um distúrbio dominante ligado ao X, é encontrado predominantemente em meninas, pois a mutação é letal em meninos. Esta síndrome está associada a várias malformações oculares inespecíficas, como catarata, microftalmia, descolamento de retina e papila hipoplásica. A presença de lacunas coriorretinianas é patognomônica para esta síndrome. O EEG mostra múltiplas anormalidades epileptiformes, como padrão de supressão de explosão com assincronia entre os dois hemisférios e um fundo desorganizado." },
+            { text: "E. Epilepsia mioclônica-astática (síndrome de Doose)", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "47. Um menino de 4 anos com desenvolvimento cognitivo normal é trazido após uma crise tônico-clônica generalizada (GTC). Nos últimos meses, ele tem tido episódios de quedas, sofrendo várias lesões. Sua mãe descreve episódios em que ele perde o tônus, causando quedas, e episódios de movimentos rápidos \"como espasmos\" simétricos dos membros superiores que também podem levar a quedas. Não há perda clara de consciência nesses eventos breves. Seu EEG interictal mostra atividade rítmica teta parietal e complexos de espícula-onda bilateral sincrônica irregular de 2 a 3 Hz. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Epilepsia mioclônica grave da infância (síndrome de Dravet)", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "B. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "C. Epilepsia mioclônica benigna da infância", correct: false, feedback: "" },
+            { text: "D. Epilepsia generalizada com crises febris mais (GEFS+)", correct: false, feedback: "" },
+            { text: "E. Epilepsia mioclônica-astática (síndrome de Doose)", correct: true, feedback: "Este paciente tem síndrome de Doose ou epilepsia mioclônica-astática. A idade típica de início é entre 1 e 5 anos. As crianças são normais antes do início das crises e muitas continuam a ter desenvolvimento cognitivo normal. As crises são predominantemente generalizadas com componentes mioclônicos ou astáticos, em que o paciente perde o tônus postural e cai, às vezes resultando em lesões. Pode haver outros tipos de crises, como ausência, tônico-clônicas generalizadas (GTC) e tônicas, e/ou estado de mal epiléptico não convulsivo. O EEG demonstra complexos de espícula-onda bilateral sincrônica irregular de 2 a 3 Hz junto com atividade rítmica teta parietal. As crises mioclônicas estão associadas a espículas irregulares e poliespículas. Pode haver uma predisposição genética, e uma história familiar de epilepsia ou EEGs anormais é frequente.\n\nEmbora muitos pacientes permaneçam normais, alguns têm atraso grave no desenvolvimento e crises intratáveis, e o prognóstico pode ser variável. O ácido valpróico é comumente prescrito. A etossuximida pode ajudar com crises de ausência. O levetiracetam e a dieta cetogênica também foram relatados como benéficos em alguns casos." }
+        ]
+    },
+    {
+        question: "48. Um menino de 2 anos com histórico de atraso no desenvolvimento e uma crise febril prolongada aos 1 ano é internado com crises frequentes de vários tipos. Ele inicialmente começou a ter crises mioclônicas; no entanto, ele também desenvolveu crises de ausência, assim como crises tônico-clônicas generalizadas (GTC) e unilaterais. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Epilepsia mioclônica grave da infância (síndrome de Dravet)", correct: true, feedback: "Este paciente tem síndrome de Dravet ou epilepsia mioclônica grave da infância. Esta é uma síndrome epiléptica grave, em que o paciente tem crises frequentes e vários tipos de crises. A apresentação inicial típica é uma crise febril (CF) no primeiro ano de vida; posteriormente, esses pacientes desenvolvem outros tipos de crises, incluindo mioclonias, ausências atípicas e crises tônicas e tônico-clônicas, que podem ser generalizadas e/ou unilaterais. Dada a apresentação inicial com uma CF, o diagnóstico pode ser atrasado. Os homens são mais afetados do que as mulheres, e pode haver uma história familiar de epilepsia ou EEGs anormais. De fato, a síndrome de Dravet pode estar no extremo mais grave do espectro da epilepsia generalizada com crises febris mais (GEFS+) e pode estar comumente associada a uma mutação no canal de sódio SCN1A. O EEG pode ser normal inicialmente no período interictal, mostrando mais tarde complexos de espícula-onda generalizados, bem como espículas focais e multifocais. O atraso no desenvolvimento é a regra e as anormalidades neurológicas são comuns. O prognóstico é ruim, as crises são difíceis de controlar e há sensibilidade à hipertermia. As opções de tratamento incluem ácido valpróico, topiramato, zonisamida e dieta cetogênica. Importante, o tratamento com fenobarbital, fenitoína, carbamazepina e lamotrigina pode exacerbar as crises." },
+            { text: "B. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "C. Epilepsia mioclônica benigna da infância", correct: false, feedback: "" },
+            { text: "D. Epilepsia generalizada com crises febris mais (GEFS+)", correct: false, feedback: "" },
+            { text: "E. Epilepsia mioclônica-astática (síndrome de Doose)", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "49. Você vê um bebê de 15 dias com hipotonia grave e espasmos tônicos frequentes ocorrendo em clusters de mais de 100 vezes por dia. O EEG mostra padrão de supressão de explosão, presente quando o paciente está acordado ou dormindo. Qual é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Epilepsia mioclônica grave da infância (síndrome de Dravet)", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "B. Síndrome de Ohtahara", correct: true, feedback: "Este paciente tem síndrome de Ohtahara, também conhecida como encefalopatia epiléptica infantil precoce (EIEE). Esta é uma condição neurológica grave e rara em que as crises começam durante a infância precoce (entre 1 dia e 3 meses de idade). Os pacientes têm espasmos tônicos epilépticos ocorrendo várias vezes por dia. O EEG tipicamente mostra um padrão de supressão de explosão que está presente durante a vigília ou o sono. Esta é uma encefalopatia epiléptica catastrófica com crises intratáveis e um prognóstico muito ruim. Em uma série, 25% dos pacientes morreram antes dos 2 anos de idade. Todos os sobreviventes têm deficiências graves e comprometimento do desenvolvimento." },
+            { text: "C. Epilepsia mioclônica benigna da infância", correct: false, feedback: "" },
+            { text: "D. Epilepsia generalizada com crises febris mais (GEFS+)", correct: false, feedback: "" },
+            { text: "E. Epilepsia mioclônica-astática (síndrome de Doose)", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "50. Uma criança de 2,5 anos vem para uma consulta de acompanhamento. Aos 8 meses de idade, ele começou a ter crises mioclônicas generalizadas breves, associadas a descargas rápidas (>3 Hz) de espícula-onda e poliespícula-onda no EEG. O EEG interictal é normal. Suas crises estão bem controladas com ácido valpróico e seu desenvolvimento tem sido normal. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Epilepsia mioclônica grave da infância (síndrome de Dravet)", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "B. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "C. Epilepsia mioclônica benigna da infância", correct: true, feedback: "Este paciente tem epilepsia mioclônica benigna da infância (BMEI). Esta condição afeta mais os meninos do que as meninas, entre as idades de 4 meses e 3 anos. É caracterizada pela presença de crises mioclônicas breves, que são facilmente tratáveis. Essas mioclonias são breves (1-3 segundos) e geralmente isoladas, sendo mais proeminentes durante a sonolência, fotossensibilidade e estimulação externa. Ao contrário dos espasmos infantis, as crises mioclônicas da BMEI não ocorrem em longas séries/agrupamentos. Durante uma crise mioclônica, o EEG mostra espículas e ondas generalizadas ou poliespículas e ondas. O EEG interictal é normal. A neuroimagem geralmente é normal. As crises respondem bem ao ácido valpróico, e o prognóstico é geralmente bom com resolução espontânea das crises em menos de um ano. O resultado neuropsicológico é favorável, embora uma pequena minoria de pacientes possa ter retardamento mental leve." },
+            { text: "D. Epilepsia generalizada com crises febris mais (GEFS+)", correct: false, feedback: "" },
+            { text: "E. Epilepsia mioclônica-astática (síndrome de Doose)", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "51. Um recém-nascido está sendo avaliado para crises, caracterizadas por episódios de apneia associados a movimentos clônicos unilaterais ou bilaterais. A partir do quinto dia de vida, ele tem tido múltiplos episódios por dia. Seu exame neurológico é normal entre as crises. Seu EEG interictal é normal. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Crises neonatais benignas", correct: true, feedback: "Este paciente tem crises neonatais benignas. Nesta síndrome, recém-nascidos a termo e saudáveis desenvolvem crises por volta do quinto dia de vida (também referidas como \"convulsões do quinto dia\"), que são crises clônicas parciais que podem ser unilaterais e/ou simétricas e podem migrar para outras regiões do corpo. Essas crises são frequentemente associadas a episódios de apneia. O EEG é normal, mas pode demonstrar o padrão \"θ pointu alternant\", caracterizado por atividade teta descontínua, assíncrona e não reativa com ondas agudas intercaladas. Os pacientes são neurologicamente normais. Em geral, não há necessidade de tratamento com agentes antiepilépticos, e as crises se resolvem espontaneamente em 4 a 6 semanas de idade." },
+            { text: "C. Síndrome de Aicardi", correct: false, feedback: "A síndrome de Aicardi é descrita na questão 46." },
+            { text: "D. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "E. Epilepsia mioclônica benigna da infância", correct: false, feedback: "A epilepsia mioclônica benigna da infância é descrita na questão 50." }
+        ]
+    },
+    {
+        question: "52. Um menino de 4 anos apresenta-se para avaliação de episódios. Aparentemente, os episódios começam com alguns fenômenos visuais, que ele não consegue descrever, seguidos por desvio dos olhos e vômito. Ele teve um total de três desses episódios. Seu EEG mostra um fundo normal com espículas occipitais de alta voltagem, que desaparecem com a abertura dos olhos. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "B. Epilepsia occipital da infância de início tardio ou tipo Gastaut", correct: false, feedback: "" },
+            { text: "C. Epilepsia occipital da infância de início precoce ou tipo Panayiotopoulos", correct: true, feedback: "Este menino apresenta uma epilepsia occipital idiopática, mais especificamente a epilepsia occipital da infância de início precoce ou síndrome de Panayiotopoulos. Nesta condição, as crises começam entre 4 e 8 anos de idade (com uma incidência máxima aos 4-5 anos) e são caracterizadas por desvio tônico dos olhos e vômito. Auras visuais são relatadas durante a vigília, caracterizadas por alucinações visuais elementares ou complexas e ilusões. Crises parciais ou tônico-clônicas generalizadas (GTC) podem ocorrer durante o sono; na verdade, na maioria das crianças, as crises ocorrem predominantemente ou exclusivamente durante o sono. O EEG mostra espículas occipitais de alta voltagem em rajadas de 1 a 3 Hz, que desaparecem com a abertura dos olhos e reaparecem com o fechamento dos olhos ou escuridão. O tratamento geralmente não é necessário. O prognóstico é bom, e esta condição se resolve em vários anos." },
+            { text: "D. Síndrome de Dravet", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "E. Síndrome de Doose", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "53. Um menino de 3 anos com retardo mental é trazido para avaliação de suas crises. Ele começou a ter ataques de queda há cerca de um ano, mas progressivamente desenvolveu vários tipos de crises, incluindo ausências, crises tônicas e crises clônicas. Vários agentes antiepilépticos foram tentados com leve melhora, mas ele ainda tem múltiplas crises por dia. Seu EEG mostra descargas de espícula-onda de 2 Hz. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Síndrome de Panayiotopoulos", correct: false, feedback: "A síndrome de Panayiotopoulos é descrita na questão 52." },
+            { text: "B. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "C. Síndrome de Landau-Kleffner", correct: false, feedback: "" },
+            { text: "D. Síndrome de Lennox-Gastaut", correct: true, feedback: "Este paciente tem síndrome de Lennox-Gastaut. Esta síndrome é caracterizada pela tríade de crises de vários tipos, EEG com complexos de espícula-onda lentos (1,5-2 Hz) difusos e retardo mental. A idade de início é entre 1 e 8 anos, com a maioria das crianças apresentando-se entre 3 e 5 anos. Menos da metade desses pacientes terá função cognitiva normal antes do início das crises, eventualmente deteriorando após o início das crises, levando a um retardo psicomotor grave. Cerca de 60% dos casos têm uma causa identificada, mas alguns são criptogênicos. Pacientes com síndrome de Lennox-Gastaut desenvolverão vários tipos de crises, incluindo ausência atípica, tônica, atônica, mioclônica e tônico-clônica. O ácido valpróico e o clonazepam são frequentemente usados. Outros medicamentos que podem ser administrados incluem lamotrigina, felbamato, topiramato e vigabatrina. A dieta cetogênica pode ser considerada. Essas crises são frequentemente refratárias à terapia." },
+            { text: "E. Crises associadas à esclerose do lobo temporal mesial", correct: false, feedback: "" }
+        ]
+    },
+    {
+        question: "54. Os pais de um menino de 5 anos relatam que ele parece estar mais retraído nos últimos meses. Há um ano, ele começou a ter crises, inicialmente crises mioclônicas e depois crises tônico-clônicas generalizadas (GTC). Cerca de 9 meses atrás, notou-se que ele tinha alguns problemas para entender a comunicação verbal, e agora parece estar afásico. Seu EEG mostra espículas multifocais. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Síndrome de Panayiotopoulos", correct: false, feedback: "A síndrome de Panayiotopoulos é descrita na questão 52." },
+            { text: "B. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "C. Síndrome de Landau-Kleffner", correct: true, feedback: "Este paciente tem síndrome de Landau-Kleffner, também conhecida como afasia epiléptica adquirida. Esta síndrome é caracterizada por uma afasia adquirida associada a anormalidades epileptiformes no EEG e crises de vários tipos. A idade de início é entre 2 e 11 anos, com um pico de início entre 5 e 7 anos; essas crianças podem inicialmente apresentar surdez verbal no contexto de audição normal. O distúrbio da linguagem progride e tanto uma afasia receptiva quanto expressiva podem eventualmente ocorrer. As crises são de vários tipos, incluindo ausência atípica, mioclônica, tônica e tônico-clônica. Além disso, uma pequena minoria de pacientes não tem histórico de crises clínicas. O EEG demonstra espículas corticais multifocais, predominantemente nos lobos temporais e parietais, mais frequentemente bilateralmente. Agentes antiepilépticos, como ácido valpróico e lamotrigina, são geralmente eficazes no controle das crises. A recuperação da fala, por outro lado, é variável, com alguns pacientes tendo uma melhora significativa, mas outros não. Corticosteroides têm sido tentados com sucesso variável." },
+            { text: "D. Síndrome de Lennox-Gastaut", correct: false, feedback: "A síndrome de Lennox-Gastaut é descrita na questão 53." },
+            { text: "E. Crises associadas à esclerose do lobo temporal mesial", correct: false, feedback: "" }
+        ]
+    },
+    {
+        question: "55. Uma menina de 11 anos é trazida para a unidade de monitoramento de epilepsia para avaliação de possíveis \"pseudo-crises\". Seus episódios ocorrem apenas à noite e são descritos como movimentos de grande amplitude e violentos dos quatro membros e do tronco. Dado os movimentos hipercinéticos bizarros e um EEG acordado normal, suas crises foram consideradas não epilépticas por um neurologista local. Na unidade de monitoramento de epilepsia, uma crise é capturada durante o sono não-REM. Qual das seguintes é o diagnóstico mais provável?",
+        options: [
+            { text: "A. Status epiléptico elétrico durante o sono (ESES)", correct: false, feedback: "" },
+            { text: "B. Síndrome de Lennox-Gastaut", correct: false, feedback: "A síndrome de Lennox-Gastaut é descrita na questão 53." },
+            { text: "C. Síndrome de Landau-Kleffner", correct: false, feedback: "A síndrome de Landau-Kleffner é descrita na questão 54." },
+            { text: "D. Epilepsia noturna frontal autossômica dominante (ENFAD)", correct: true, feedback: "Esta paciente tem epilepsia noturna frontal autossômica dominante (ENFAD). Essas crises começam na infância e frequentemente persistem na vida adulta. Pacientes com ENFAD apresentam comportamentos episódicos bizarros no contexto de crises hipermotoras, ou seja, crises hipercinéticas com fenômenos motores proeminentes, como contorções e sacudidelas. Essas crises ocorrem durante o sono não-REM, e os pacientes podem experimentar despertares súbitos com manifestações motoras. Alguns pacientes estarão conscientes e relatarão auras com componentes epigástricos, sensoriais ou psíquicos. Devido à aparência incomum dessas crises, elas são frequentemente confundidas com crises não epilépticas psicogênicas (\"pseudo-crises\") ou distúrbios relacionados ao sono. O EEG interictal geralmente é normal, e o diagnóstico é baseado na captura das crises no vídeo EEG. Essas crises geralmente respondem bem à carbamazepina ou oxcarbazepina. Mutations in the genes that encode subunits of the nicotinic acetylcholine receptors, CNRNA4 e CHRNB2, foram detectadas." },
+            { text: "E. Síndrome de Panayiotopoulos", correct: false, feedback: "A síndrome de Panayiotopoulos é descrita na questão 52." }
+        ]
+    },
+    {
+        question: "56. Em um paciente com epilepsia de ausência, o estado de mal epiléptico pode ser precipitado por todos os seguintes medicamentos antiepilépticos, exceto:",
+        options: [
+            { text: "A. Fenitoína", correct: false, feedback: "Fenitoína tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+            { text: "B. Topiramato", correct: true, feedback: "Fenitoína, carbamazepina, gabapentina e lamotrigina têm sido associadas ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência. O topiramato não tem essa associação." },
+            { text: "C. Carbamazepina", correct: false, feedback: "Carbamazepina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+            { text: "D. Lamotrigina", correct: false, feedback: "Lamotrigina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." },
+            { text: "E. Gabapentina", correct: false, feedback: "Gabapentina tem sido associada ao agravamento das crises de ausência e até mesmo ao estado de mal epiléptico de ausência em crianças com epilepsia de ausência." }
+        ]
+    },
+    {
+        question: "57. Qual das seguintes é a característica da síndrome de Aicardi?",
+        options: [
+            { text: "A. Agenesia do corpo caloso", correct: true, feedback: "Agenesia do corpo caloso é uma característica importante da síndrome de Aicardi, juntamente com espasmos infantis e anomalias retinianas." },
+            { text: "B. Espasmos tônicos", correct: false, feedback: "Espasmos tônicos são característicos da síndrome de Ohtahara." },
+            { text: "C. Crises febris", correct: false, feedback: "Crises febris são frequentemente associadas à síndrome de Dravet." },
+            { text: "D. Atraso no desenvolvimento", correct: false, feedback: "Embora o atraso no desenvolvimento possa estar presente, ele não é específico da síndrome de Aicardi." },
+            { text: "E. Movimentos clônicos", correct: false, feedback: "Movimentos clônicos são mais comuns em outras condições epilépticas." }
+        ]
+    },
+    {
+        question: "58. Qual das seguintes condições está associada a mutações no gene SCN1A?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Síndrome de Aicardi", correct: false, feedback: "A síndrome de Aicardi é descrita na questão 46." },
+            { text: "C. Síndrome de Dravet", correct: true, feedback: "A síndrome de Dravet está comumente associada a mutações no gene SCN1A." },
+            { text: "D. Síndrome de Doose", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." },
+            { text: "E. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." }
+        ]
+    },
+    {
+        question: "59. Qual é o tratamento de escolha para crises de ausência?",
+        options: [
+            { text: "A. Fenitoína", correct: false, feedback: "A fenitoína não é o tratamento de escolha para crises de ausência." },
+            { text: "B. Ácido valpróico", correct: true, feedback: "O ácido valpróico é frequentemente utilizado no tratamento de crises de ausência." },
+            { text: "C. Carbamazepina", correct: false, feedback: "A carbamazepina não é recomendada para crises de ausência e pode até agravar a condição." },
+            { text: "D. Lamotrigina", correct: false, feedback: "Embora a lamotrigina possa ser usada, o ácido valpróico é mais comumente o tratamento de escolha." },
+            { text: "E. Topiramato", correct: false, feedback: "O topiramato não é o tratamento de escolha para crises de ausência." }
+        ]
+    },
+    {
+        question: "60. Qual das seguintes síndromes epilépticas é mais provável de ser refratária ao tratamento?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Epilepsia mioclônica benigna da infância", correct: false, feedback: "A epilepsia mioclônica benigna da infância é descrita na questão 50." },
+            { text: "C. Síndrome de Lennox-Gastaut", correct: true, feedback: "A síndrome de Lennox-Gastaut é conhecida por ser refratária ao tratamento." },
+            { text: "D. Síndrome de Panayiotopoulos", correct: false, feedback: "A síndrome de Panayiotopoulos é descrita na questão 52." },
+            { text: "E. Epilepsia occipital da infância de início precoce", correct: false, feedback: "A epilepsia occipital da infância de início precoce é descrita na questão 52." }
+        ]
+    },
+    {
+        question: "61. Qual das seguintes características é típica da síndrome de Landau-Kleffner?",
+        options: [
+            { text: "A. Agenesia do corpo caloso", correct: false, feedback: "A agenesia do corpo caloso é uma característica da síndrome de Aicardi." },
+            { text: "B. Espasmos tônicos", correct: false, feedback: "Os espasmos tônicos são característicos da síndrome de Ohtahara." },
+            { text: "C. Crises febris", correct: false, feedback: "Crises febris são associadas à síndrome de Dravet." },
+            { text: "D. Afasia adquirida", correct: true, feedback: "A afasia adquirida é uma característica típica da síndrome de Landau-Kleffner." },
+            { text: "E. Movimentos clônicos", correct: false, feedback: "Movimentos clônicos são mais comuns em outras condições epilépticas." }
+        ]
+    },
+    {
+        question: "62. Qual das seguintes condições está associada ao padrão de EEG de supressão de explosão?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Síndrome de Ohtahara", correct: true, feedback: "O padrão de supressão de explosão é característico da síndrome de Ohtahara." },
+            { text: "C. Síndrome de Dravet", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "D. Síndrome de Lennox-Gastaut", correct: false, feedback: "A síndrome de Lennox-Gastaut é descrita na questão 53." },
+            { text: "E. Síndrome de Doose", correct: false, feedback: "A síndrome de Doose é descrita na questão 47." }
+        ]
+    },
+    {
+        question: "63. Qual das seguintes síndromes epilépticas pode apresentar espículas occipitais de alta voltagem no EEG?",
+        options: [
+            { text: "A. Síndrome de West", correct: false, feedback: "A síndrome de West é descrita na questão 45." },
+            { text: "B. Síndrome de Ohtahara", correct: false, feedback: "A síndrome de Ohtahara é descrita na questão 49." },
+            { text: "C. Síndrome de Dravet", correct: false, feedback: "A síndrome de Dravet é descrita na questão 48." },
+            { text: "D. Epilepsia occipital da infância de início precoce", correct: true, feedback: "A epilepsia occipital da infância de início precoce, ou síndrome de Panayiotopoulos, pode apresentar espículas occipitais de alta voltagem no EEG." },
+            { text: "E. Síndrome de Lennox-Gastaut", correct: false, feedback: "A síndrome de Lennox-Gastaut é descrita na questão 53." }
+            ]
+    }
+];
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let answeredQuestions = [];
+        let mode = 'new';
+        let numQuestions = 10;
+
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const feedbackEl = document.getElementById('feedback');
+        const resultEl = document.getElementById('result');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const showFeedbackButton = document.getElementById('show-feedback-button');
+        const resetButton = document.getElementById('reset-button');
+        const newQuizButton = document.getElementById('new-quiz-button');
+        const startQuizButton = document.getElementById('start-quiz');
+        const numQuestionsInput = document.getElementById('num-questions');
+        const modeSelect = document.getElementById('mode');
+
+        startQuizButton.addEventListener('click', startQuiz);
+
+        function startQuiz() {
+            numQuestions = parseInt(numQuestionsInput.value);
+            mode = modeSelect.value;
+            currentQuestion = 0;
+            correctAnswers = 0;
+            answeredQuestions = [];
+
+            if (mode === 'new') {
+                questionBank.sort(() => 0.5 - Math.random());
+            }
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questionBank[currentQuestion];
+            questionEl.textContent = q.question;
+            optionsEl.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const optionEl = document.createElement('button');
+                optionEl.textContent = option.text;
+                optionEl.className = 'option';
+                optionEl.addEventListener('click', () => selectOption(index));
+                optionsEl.appendChild(optionEl);
+            });
+            feedbackEl.innerHTML = '';
+            feedbackEl.style.display = 'none';
+            showFeedbackButton.style.display = 'none';
+            resultEl.textContent = `Você acertou ${correctAnswers} de ${answeredQuestions.length} perguntas (${((correctAnswers / answeredQuestions.length) * 100).toFixed(2)}%)`;
+        }
+
+        function selectOption(index) {
+            const q = questionBank[currentQuestion];
+            const selectedOption = q.options[index];
+            if (selectedOption.correct) {
+                correctAnswers++;
+                optionsEl.children[index].classList.add('correct');
+            } else {
+                optionsEl.children[index].classList.add('incorrect');
+            }
+            q.options.forEach((option, idx) => {
+                const feedbackItem = document.createElement('div');
+                feedbackItem.textContent = option.feedback;
+                feedbackItem.className = `feedback-item ${option.correct ? 'correct' : 'incorrect'}`;
+                feedbackEl.appendChild(feedbackItem);
+            });
+            const referenceItem = document.createElement('div');
+            referenceItem.textContent = q.options.find(opt => opt.correct).references;
+            referenceItem.className = 'reference';
+            feedbackEl.appendChild(referenceItem);
+            feedbackEl.style.display = 'block';
+            showFeedbackButton.style.display = 'block';
+            answeredQuestions.push(currentQuestion);
+            resultEl.textContent = `Você acertou ${correctAnswers} de ${answeredQuestions.length} perguntas (${((correctAnswers / answeredQuestions.length) * 100).toFixed(2)}%)`;
+
+            // Bloqueia as opções após a seleção
+            Array.from(optionsEl.children).forEach(option => option.disabled = true);
+        }
+
+        function showFeedback() {
+            if (feedbackEl.style.display === 'none') {
+                feedbackEl.style.display = 'block';
+                showFeedbackButton.textContent = 'Esconder Comentários';
+            } else {
+                feedbackEl.style.display = 'none';
+                showFeedbackButton.textContent = 'Mostrar Comentários';
+            }
+        }
+
+        function resetQuiz() {
+            currentQuestion = 0;
+            correctAnswers = 0;
+            answeredQuestions = [];
+            loadQuestion();
+        }
+
+        function newQuiz() {
+            resetQuiz();
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questionBank.length - 1 && answeredQuestions.length < numQuestions) {
+                currentQuestion++;
+                loadQuestion();
+            } else {
+                alert('Você concluiu o questionário.');
+            }
+        }
+
+        prevButton.addEventListener('click', prevQuestion);
+        nextButton.addEventListener('click', nextQuestion);
+        showFeedbackButton.addEventListener('click', showFeedback);
+        resetButton.addEventListener('click', resetQuiz);
+        newQuizButton.addEventListener('click', newQuiz);
+
+        loadQuestion();
+    </script>
+</body>
+</html>
+
